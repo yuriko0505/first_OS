@@ -7,6 +7,8 @@
 |0|08/05|[Day00](#day00)|
 |1|08/05|[Day01](#day01)|
 
+githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)
+
 ## 日記
 ### Day00
 イントロ．<br>
@@ -18,3 +20,10 @@ OS自作がんばるぞー
 - バイナリエディタ: Hex Fiend
 - エミュレータ: qemu
 - アセンブラ: NASM
+
+### Day02
+<span style="color: RoyalBlue; font-size: 150%;">***アセンブラ学習***</span><br>
+mformatの使い方 → [mtools についてのメモ](https://qiita.com/code2545Light/items/1586a7c19ba91fdc0cb4)<br>
+
+コンピュロみがある！
+
