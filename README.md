@@ -10,6 +10,7 @@
 |3|08/06|[Day03](#day03)|
 |4|08/07|[Day04](#day04)|
 |5|08/08|[Day05](#day05)|
+|6|08/09|[Day06](#day06)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)
 
@@ -83,3 +84,6 @@ _io_load_eflags:
 - アロー演算子
 - extern
 - 動的引数（引数が可変個の関数）
+
+### Day06
+<span style="color: RoyalBlue; font-size: 150%;">***分割コンパイルと割り込み処理***</span><br>
