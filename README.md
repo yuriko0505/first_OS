@@ -11,6 +11,7 @@
 |4|08/07|[Day04](#day04)|
 |5|08/08|[Day05](#day05)|
 |6|08/09|[Day06](#day06)|
+|7|08/10|[Day07](#day07)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)
 
@@ -87,3 +88,11 @@ _io_load_eflags:
 
 ### Day06
 <span style="color: RoyalBlue; font-size: 150%;">***分割コンパイルと割り込み処理***</span><br>
+
+### Day07
+<span style="color: RoyalBlue; font-size: 150%;">***FIFOとマウス制御***</span><br>
+お気持ち
+- 割り込みが来たら状況をbufにいれておいて、すぐに戻す
+- ctrlも普通に ```1d``` ↔︎ ```9d``` となる（Macbook Air, Ventra 13.1, qemu）
+- ぐるぐる回るFIFO
+- マウスからの割り込みにも対応した
