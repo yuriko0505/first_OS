@@ -14,7 +14,8 @@
 |7|08/10|[Day07](#day07)|
 |8|08/14|[Day08](#day08)|
 
-githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)
+githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
+[サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
 
 ## 日記
 ### Day00
