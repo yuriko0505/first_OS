@@ -14,6 +14,7 @@
 |7|08/10|[Day07](#day07)|
 |8|08/14|[Day08](#day08)|
 |9|08/15|[Day09](#day09)|
+|10|08/17|[Day10](#day10)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -126,3 +127,18 @@ _io_load_eflags:
   - 現在のQEMUのメモリはデフォルト ```128 MB``` らしい．
 - メモリ管理の基本は「確保と解放」
 - 632KB + 124MB = 127,608KB
+- STEPのmallocのやつ思い出した
+
+### Day10
+<span style="color: RoyalBlue; font-size: 150%;">***重ね合わせ処理***</span><br>
+- メモリは0x1000B(4kB)単位で管理するようにした
+- harib07b
+  - 127532 KB
+  - 重ね合わせの処理には成功
+  - マウスがチカチカする！
+- harib07c
+  - 127532 KB
+  - bよりは滑らか
+  - まだチカチカする
+- harib07d
+  - ヌルヌル動くようになった！
