@@ -16,6 +16,7 @@
 |9|08/15|[Day09](#day09)|
 |10|08/17|[Day10](#day10)|
 |11|08/19|[Day11](#day11)|
+|12|08/23|[Day12](#day12)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -155,4 +156,13 @@ _io_load_eflags:
 - 実行すると、マウスをカウンタ上に置いてもちらつきがなくなった
 
 気付き
-- mysprintfを桁数指定対応にしたい
+- mysprintfを桁数指定対応にしたい -> した
+
+### Day12
+<span style="color: RoyalBlue; font-size: 150%;">***タイマ-1***</span><br>
+- タイマは時間管理に重要
+- PIC (Programmable Interval Timer)
+- IRQ0に接続
+- タイマの ```timeout``` を残り時間 → 終了予定時刻に変更
+- 次に終わりそうなタイマに注目する
+- ```sheet.c``` に倣い，タイマを順番に格納しておく
