@@ -17,6 +17,7 @@
 |10|08/17|[Day10](#day10)|
 |11|08/19|[Day11](#day11)|
 |12|08/23|[Day12](#day12)|
+|13|08/25|[Day13](#day13)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -166,3 +167,22 @@ _io_load_eflags:
 - タイマの ```timeout``` を残り時間 → 終了予定時刻に変更
 - 次に終わりそうなタイマに注目する
 - ```sheet.c``` に倣い，タイマを順番に格納しておく
+
+### Day13
+<span style="color: RoyalBlue; font-size: 150%;">***タイマ-2***</span><br>
+- タイム測定がうまくいかない
+  - for文の始めの ```sprintf``` と ```putfonts8_asc_sht``` を消すと全く動かない
+    - マウスの反応がガクガク、キーボードの反応も遅い
+  - ```sprintf``` を入れると10倍くらいの遅さで動く
+  - ```putfonts8_asc_sht``` を 入れるとちゃんと動く(が，ウィンドウが汚い())
+  - ```sprintf```　と ```putfonts8_asc_sht``` と両方入れてもちゃんと動く
+  - inthandler20の問題っぽい ← Mac(qemu)とWindowsでは違う？
+  - 原因は不明だが、```sheet_refresh``` を入れて対処
+    - harib10c: 224000
+    - harib10g: 218000
+- キーボード，マウス．タイマのFIFOバッファを共通化
+  - 共通化したのにむしろ遅くなった
+- タイマを配列から連結リストへ
+  - harib10h: 219000
+- 番兵を用意
+  - harib10i: 218000
