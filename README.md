@@ -19,6 +19,7 @@
 |12|08/23|[Day12](#day12)|
 |13|08/25|[Day13](#day13)|
 |14|08/27|[Day14](#day14)|
+|15|08/27|[Day15](#day15)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -204,3 +205,16 @@ _io_load_eflags:
 - ```static``` をつけると，RESB命令でなくDB命令になる
 - テキストボックスを作り，文字を入力できるようになった
 - ウィンドウをマウスで動かせるようになった
+
+### Day15
+<span style="color: RoyalBlue; font-size: 150%;">***マルチタスク-1***</span><br>
+- TSS(Task Status Segment)
+- EIPレジスタ: 次に実行する命令のメモリ番地を記憶するレジスタ
+  - JMP 0x1234 = MOV EIP,0x1234
+- JMPには2種類ある
+  - near モード: EIPのみ切り替え
+  - far モード: EIPとCSを同時に切り替え
+- カウントはそれなりに早い(10sec: 90000)
+- スピードアップ→day13と同じ不具合
+  - ```boxfill8```を入れて対処したところ，動くようにはなったがカウンタが表示されない
+- 結局カウンタ表示されない
