@@ -74,7 +74,7 @@ void HariMain(void)
 		task_b[i]->tss.ds = 1 * 8;
 		task_b[i]->tss.fs = 1 * 8;
 		task_b[i]->tss.gs = 1 * 8;
-		*((int *) task_b[i]->tss.esp + 4) = (int) sht_win_b[i];
+		*((int *) (task_b[i]->tss.esp + 4)) = (int) sht_win_b[i];
 		task_run(task_b[i]);
 	}
 
@@ -294,7 +294,7 @@ void task_b_main(struct SHEET *sht_win_b)
 			io_sti();
 			if (i == 100) {
 				sprintf(s, "%11d", count - count0);
-				putfonts8_asc_sht(sht_win_b, 24, 48, COL8_FFFFFF, COL8_008484, s, 11);
+				putfonts8_asc_sht(sht_win_b, 24, 28, COL8_000000, COL8_C6C6C6, s, 11);
 				count0 = count;
 				timer_settime(timer_1s, 100);
 			}

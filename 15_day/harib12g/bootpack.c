@@ -120,7 +120,7 @@ void HariMain(void)
 	tss_b.ds = 1 * 8;
 	tss_b.fs = 1 * 8;
 	tss_b.gs = 1 * 8;
-	*((int *) task_b_esp) = (int) sht_back;
+	*((int *) (task_b_esp + 4)) = (int) sht_back;
 	mt_init();
 
 	for (;;) {
