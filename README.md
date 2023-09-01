@@ -22,6 +22,7 @@
 |15|08/27|[Day15](#day15)|
 |16|08/28|[Day16](#day16)|
 |17|08/29|[Day17](#day17)|
+|18|09/01|[Day18](#day18)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -245,3 +246,12 @@ _io_load_eflags:
 - 現状は起動後のCaps Lockが反映されない → キーコードは0xbaで，クリック時のみ
   - 対応させた(192行目)
 - qemuのみでの実行のため，ランプ点灯は未実装
+
+### Day18
+<span style="color: RoyalBlue; font-size: 150%;">***dirコマンド***</span><br>
+- アクティブなウィンドウのカーソルのみ点滅するようにする
+- スクロールに対応 (入力時)
+- memコマンド(はりぼてOS初コマンド！)
+- mysprintfで文字列にも対応したい
+  - はりぼて用にカスタマイズされたスマートな関数をね
+- clearコマンド
