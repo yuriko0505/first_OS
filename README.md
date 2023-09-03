@@ -24,6 +24,7 @@
 |17|08/29|[Day17](#day17)|
 |18|09/01|[Day18](#day18)|
 |19|09/02|[Day19](#day19)|
+|20|09/03|[Day20](#day20)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -273,3 +274,14 @@ _io_load_eflags:
 - ```cat``` が command not found になるの悔しすぎる
 - 改行コードに対応(Carriage Return + Line Feed)
 - FATに対応し，任意の大きさのファイルを読み出せるようになった
+
+### Day20
+<span style="color: RoyalBlue; font-size: 150%;">***API***</span><br>
+- 本の通りに```hlt.nas```を書くと異常終了して再起動する
+- (harib17c) ```hlt``` を実行すると上1/4が ```#C6C6C6``` になる
+- (harib17d) ```hlt``` すると止まる、、関数の番地が違うのではないか？
+- IDTの ```0x40``` 番に ```asm_cons_putchar``` を登録 → helloと出力された！
+  - OS を書き換えてもアプリが動くようになる
+- ```hello``` でも ```hello.hrb``` でも起動するようになった
+- sprintfに```%fs```(ファイル名フォーマット)を導入したい
+- ```hello``` は動くが ```hello2``` は動かない(これは次回)
