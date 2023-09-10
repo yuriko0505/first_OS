@@ -25,6 +25,7 @@
 |18|09/01|[Day18](#day18)|
 |19|09/02|[Day19](#day19)|
 |20|09/03|[Day20](#day20)|
+|21|09/05|[Day21](#day21)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -285,3 +286,19 @@ _io_load_eflags:
 - ```hello``` でも ```hello.hrb``` でも起動するようになった
 - sprintfに```%fs```(ファイル名フォーマット)を導入したい
 - ```hello``` は動くが ```hello2``` は動かない(これは次回)
+
+### Day21
+<span style="color: RoyalBlue; font-size: 150%;">***OSを守ろう***</span><br>
+- ```hello2``` がちゃんと動いた
+- ```
+  EB 16 00 00 00 CB
+  ```
+  は
+  ```Assembly
+  [BITS 32]
+    CALL  0x1b
+    RETF
+  ```
+- OSを守ろう
+- 例外は割り込み番号```0x0d```
+- General Protected Exception.
