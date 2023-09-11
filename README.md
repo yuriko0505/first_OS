@@ -26,6 +26,8 @@
 |19|09/02|[Day19](#day19)|
 |20|09/03|[Day20](#day20)|
 |21|09/05|[Day21](#day21)|
+|22|09/10|[Day22](#day22)|
+|23|09/11|[Day23](#day23)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -302,3 +304,18 @@ _io_load_eflags:
 - OSを守ろう
 - 例外は割り込み番号```0x0d```
 - General Protected Exception.
+
+### Day22
+<span style="color: RoyalBlue; font-size: 150%;">***C言語でアプリケーションを作ろう***</span><br>
+参考ページ:
+- [割り込みと例外](https://www.hazymoon.jp/OpenBSD/annex/interrupt.html)
+
+内容
+- ESP[11]がEIP
+- アプリではエラー文が出ない
+- hrbファイルの0x000cがESPレジスタの初期値
+  - 0x310000
+- ついにウィンドウがでた！
+
+### Day23
+<span style="color: RoyalBlue; font-size: 150%;">***グラフィック色々***</span><br>
