@@ -30,6 +30,7 @@
 |23|09/11|[Day23](#day23)|
 |24|09/12|[Day24](#day24)|
 |25|09/13|[Day25](#day25)|
+|26|09/15|[Day26](#day26)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -341,3 +342,13 @@ _io_load_eflags:
   - ```inthandler27```を削除するとうまく動いた
 - うまく動いてはいるが、起動後にカーソルが点滅しない
 - FIFOの初期化をbootpackで行うと、点滅もうまく行った
+
+### Day26
+<span style="color: RoyalBlue; font-size: 150%;">***ウィンドウ移動の高速化***</span><br>
+- ウィンドウ移動を速く
+  - if文を展開
+  - 32 bit ずつ書き込む
+- Shift + F2 でコンソールを開く
+- コンソールを沢山
+- startコマンド
+- ncstコマンド
