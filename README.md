@@ -29,6 +29,7 @@
 |22|09/10|[Day22](#day22)|
 |23|09/11|[Day23](#day23)|
 |24|09/12|[Day24](#day24)|
+|25|09/13|[Day25](#day25)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -331,3 +332,12 @@ _io_load_eflags:
 - カーソルでウィンドウを動かせる
 - バツ印でウィンドウを消せるようになった
 - タイマーを呼び出せるようにした
+
+### Day25
+<span style="color: RoyalBlue; font-size: 150%;">***コンソールを増やそう***</span><br>
+- QEMUではBeep音が鳴らない
+- カラーパレット2種類
+- harib22fが動かない
+  - ```inthandler27```を削除するとうまく動いた
+- うまく動いてはいるが、起動後にカーソルが点滅しない
+- FIFOの初期化をbootpackで行うと、点滅もうまく行った
