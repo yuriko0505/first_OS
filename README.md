@@ -31,6 +31,7 @@
 |24|09/12|[Day24](#day24)|
 |25|09/13|[Day25](#day25)|
 |26|09/15|[Day26](#day26)|
+|27|09/17|[Day27](#day27)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -352,3 +353,13 @@ _io_load_eflags:
 - コンソールを沢山
 - startコマンド
 - ncstコマンド
+
+### Day27
+<span style="color: RoyalBlue; font-size: 150%;">***LDTとライブラリ***</span><br>
+- ncstで起動したアプリが xボタン で消えないバグを修正
+- LDTを実装
+  - アプリから、他のアプリのセグメントにアクセスできなくなった
+- ```a_nask.nas```を分解し、```libapi.a```とした
+  - アプリの大きさが小さくなった、いい話！
+- ファイル構造を整理し、Makefileを大幅に改造
+  - めちゃ大変だった、、
