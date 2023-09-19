@@ -32,6 +32,7 @@
 |25|09/13|[Day25](#day25)|
 |26|09/15|[Day26](#day26)|
 |27|09/17|[Day27](#day27)|
+|28|09/18|[Day28](#day28)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -363,3 +364,15 @@ _io_load_eflags:
   - アプリの大きさが小さくなった、いい話！
 - ファイル構造を整理し、Makefileを大幅に改造
   - めちゃ大変だった、、
+
+### Day28
+<span style="color: RoyalBlue; font-size: 150%;">***ファイルと日本語表示***</span><br>
+- 10kBの変数をスタックに確保しようとしても警告が出なかった
+  - けど一応実装
+  - メモリを多く取るアプリは小さくなった！
+- ファイルAPIの実装
+- コマンドラインAPIの実装
+- 日本語表示させようとごちゃごちゃいじったらカーソルが点滅しなくなった(harib25e)
+  - make src_only_full してから make run_full したら動いた泣
+- シフトJISもEUCも漢字が出ない
+- やはり漢字表示がバグっている、、
