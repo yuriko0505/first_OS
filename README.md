@@ -33,6 +33,7 @@
 |26|09/15|[Day26](#day26)|
 |27|09/17|[Day27](#day27)|
 |28|09/18|[Day28](#day28)|
+|29|09/19|[Day29](#day29)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -376,3 +377,12 @@ _io_load_eflags:
   - make src_only_full してから make run_full したら動いた泣
 - シフトJISもEUCも漢字が出ない
 - やはり漢字表示がバグっている、、
+
+### Day29
+<span style="color: RoyalBlue; font-size: 150%;">***圧縮と簡単なアプリケーション***</span><br>
+- 漢字がうまく出ない問題、メモリ番地の違いというかunsignedの処理では？
+- ```mylib``` に追加した関数
+  - ```longjmp```, ```setjmp``` ← 放置
+  - ```memcmp``` は ```strncmp``` で代替
+- bball✨
+- インベーダゲーム
