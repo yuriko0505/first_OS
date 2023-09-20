@@ -1,0 +1,650 @@
+     1                                  ; BMP decode routine by I.Tak. 2003
+     2                                  
+     3                                  section .text align=1
+     4                                  [bits 32]
+     5                                  ;BMP File Structure (I can't understand MS.)
+     6                                  
+     7                                  	struc BMP
+     8                                  		;FILE HEADER
+     9 00000000 ????                    .fType:		resw 1	;BM
+    10 00000002 ????????                .fSize:		resd 1	;whole file size
+    11 00000006 ????????                		resd 1	;reserved
+    12 0000000A ????????                .fOffBits:	resd 1	;offset from file top to image
+    13                                  		;INFO HEADER
+    14 0000000E ????????                .iSize:		resd 1	;INFO HEADER size
+    15 00000012 ????????                .iWidth:	resd 1	;Image Width in pixels
+    16 00000016 ????????                .iHeight:	resd 1	;Image Height in pixels
+    17 0000001A ????                    .iPlanes:	resw 1	;must be 1
+    18 0000001C ????                    .iBitCount:	resw 1	;BitPerPixel 1, 4, 8, 24 (and 15,16 for new OS/2 ?)
+    19 0000001E ????????                .iCompression:	resd 1	;Compress Type. 0 for none, then SizeImage=0
+    20 00000022 ????????                .iSizeImage:	resd 1	;Image Size(compressed)
+    21 00000026 ????????                .iXPPM:		resd 1	;X Pixel Per Meter
+    22 0000002A ????????                .iYPPM:		resd 1
+    23 0000002E ????????                .iClrUsed:	resd 1	;Number of used ColorQuad (0 for whole Quad)
+    24 00000032 ????????                .iClrImportant:	resd 1	;Number of Important ColorQuad.
+    25                                  	endstruc
+    26                                  
+    27                                  	struc BMPOS2
+    28                                  		;FILE HEADER
+    29 00000000 ????                    .fType:		resw 1	;BM
+    30 00000002 ????????                .fSize:		resd 1	;whole file size
+    31 00000006 ????????                		resd 1	;reserved
+    32 0000000A ????????                .fOffBits:	resd 1	;offset from file top to image
+    33                                  		;CORE HEADER
+    34 0000000E ????????                .iSize:		resd 1	;CORE HEADER size
+    35 00000012 ????                    .iWidth:	resw 1	;Image Width in pixels
+    36 00000014 ????                    .iHeight:	resw 1	;Image Height in pixels
+    37 00000016 ????                    .iPlanes:	resw 1	;must be 1
+    38 00000018 ????                    .iBitCount:	resw 1	;BitPerPixel 1, 4, 8, 24 (and 15,16 for new OS/2 ?)
+    39                                  	endstruc
+    40                                  
+    41                                  ; B/W bmp can also have palettes. The first for 0, second for 1.
+    42                                  
+    43                                  	struc CQuad
+    44 00000000 ??                      .b:	resb 1
+    45 00000001 ??                      .g:	resb 1
+    46 00000002 ??                      .r:	resb 1
+    47 00000003 ??                      	resb 1	;reserved
+    48                                  	endstruc
+    49                                  
+    50                                  
+    51                                  %if 0
+    52                                  int info_BMP(struct DLL_STRPICENV *env, int *info, int size, UCHAR *fp);
+    53                                  /* 成功したら1 (非0?), 失敗したら0 */
+    54                                  int decode0_BMP(struct DLL_STRPICENV *env, int size, UCHAR *fp,
+    55                                                  int b_type, UCHAR *buf, int skip);
+    56                                  /* エラーコードを返す。とりあえず非0にしてるだけ */
+    57                                  envは64KBのワークエリアである。先頭8dwは返り値用になっている。
+    58                                  揮発性らしく, インスタンス変数的には使えないようだ。JPEG_initで
+    59                                  base_imgを作るのはdecodeのときだけでいいと思う。
+    60                                  %endif
+    61                                  
+    62                                  [absolute 0]	;naskなら[section .bss] org 0 かな win32だからダメか
+    63                                  bmpinfo:
+    64 00000000 <res 10h>               .regs:		resd 4
+    65 00000010 ????????                .reteip:	resd 1
+    66 00000014 ????????                .env:		resd 1
+    67 00000018 ????????                .info:		resd 1
+    68 0000001C ????????                .size:		resd 1
+    69 00000020 ????????                .module:	resd 1
+    70                                  [absolute 0]
+    71                                  info:
+    72 00000000 ????????                .type:		resd 1	;1 for BMP, 2 for JPEG
+    73 00000004 ????????                		resd 1	;0
+    74 00000008 ????????                .width:		resd 1
+    75 0000000C ????????                .height:	resd 1
+    76                                  [section .text]
+    77                                  [global  _info_BMP]
+    78                                  _info_BMP:
+    79 00000000 53                      	push ebx
+    80 00000001 55                      	push ebp
+    81 00000002 56                      	push esi
+    82 00000003 57                      	push edi
+    83 00000004 8B742420                	mov esi, [esp+bmpinfo.module]
+    84 00000008 8B44241C                	mov eax, [esp+bmpinfo.size]
+    85 0000000C E81C000000              	call bmpHeader
+    86 00000011 85FF                    	test edi, edi
+    87 00000013 7411                    	jz .ret
+    88 00000015 8B742418                	mov esi, [esp+bmpinfo.info]
+    89 00000019 894608                  	mov [esi+info.width], eax
+    90 0000001C 894E0C                  	mov [esi+info.height], ecx
+    91 0000001F 893E                    	mov [esi+info.type], edi	;=1
+    92 00000021 4F                      	dec edi
+    93 00000022 897E04                  	mov [esi+info.type+4], edi	;=0
+    94 00000025 47                      	inc edi
+    95 00000026 89F8                    .ret:	mov eax, edi
+    96 00000028 5F                      	pop edi
+    97 00000029 5E                      	pop esi
+    98 0000002A 5D                      	pop ebp
+    99 0000002B 5B                      	pop ebx
+   100 0000002C C3                      	ret
+   101                                  
+   102                                  ;in: esi=module, eax=size
+   103                                  ;ret:eax=width, ecx=hegiht, edx=paletteSize, ebx=palette
+   104                                  ;    ebp=bpp, esi=endOfImage, edi=successFlag
+   105                                  bmpHeader:
+   106 0000002D 8D1406                  	lea edx, [esi+eax]		;moduleEnd
+   107 00000030 31FF                    	xor edi, edi
+   108 00000032 52                      	push edx
+   109 00000033 31D2                    	xor edx, edx
+   110                                  
+   111 00000035 83F812                  	cmp eax, byte BMP.iSize+4
+   112 00000038 7612                    	jbe ..@ret			;中継してしまう
+   113 0000003A 66813E424D              	cmp word[esi],'BM'
+   114 0000003F 7414                    	je .notMAC
+   115 00000041 83EE80                  	sub esi, byte -128
+   116 00000044 83C080                  	add eax, byte -128
+   117 00000047 5B                      	pop ebx
+   118 00000048 50                      	push eax
+   119 00000049 83F812                  	cmp eax, byte BMP.iSize+4
+   120 0000004C 7670                    ..@ret:	jbe .ret
+   121 0000004E 66813E424D              	cmp word[esi], 'BM'
+   122 00000053 7569                    	jne .ret
+   123                                  .notMAC:
+   124                                  	;;MS,OS/2 フォーマット確認
+   125 00000055 8B4E0E                  	mov ecx, [esi +BMP.iSize]
+   126 00000058 83F90C                  	cmp ecx, byte 12			;OS/2 format.
+   127 0000005B 7519                    	jne .MS
+   128 0000005D 83F81A                  	cmp eax, byte BMPOS2_size
+   129 00000060 765C                    	jbe .ret				;coreヘッダなし
+   130 00000062 8D5C0E0E                	lea ebx, [esi+ecx+14]			;palette
+   131 00000066 0FB74612                	movzx eax, word[esi+BMPOS2.iWidth]	;width
+   132 0000006A 0FB74E14                	movzx ecx, word[esi+BMPOS2.iHeight]	;height
+   133 0000006E 0FB76E18                	movzx ebp, word[esi+BMPOS2.iBitCount]	;bpp
+   134 00000072 B203                    	mov dl, 3				;paletteSize
+   135 00000074 EB1F                    	jmp short .endif
+   136 00000076 83F836                  .MS:	  cmp eax, byte BMP_size
+   137 00000079 7643                    	jbe .ret				;infoヘッダなし
+   138 0000007B 8D5C0E0E                	lea ebx, [esi+ecx+14]
+   139 0000007F 83E928                  	sub ecx,byte 40
+   140 00000082 753A                    	jne .ret				;unknownFormat
+   141 00000084 3B4E1E                  	cmp ecx, [esi+BMP.iCompression]
+   142 00000087 7535                    	jne .ret				;Compressed.
+   143 00000089 8B4612                  	mov   eax, [esi+BMP.iWidth]		;width
+   144 0000008C 8B4E16                  	mov   ecx, [esi+BMP.iHeight]		;height
+   145 0000008F 0FB76E1C                	movzx ebp, word[esi +BMP.iBitCount]	;bpp
+   146 00000093 B204                    	mov dl, 4				;paletteSize
+   147                                  .endif:
+   148 00000095 03760A                  	add esi, [esi +BMP.fOffBits]
+   149                                  
+   150                                  	;sizeが小さい場合heightを削ってで
+   151                                   
+   152                                  	;読めると答えるべきだろう。今はエラー
+   153 00000098 52                      	push edx
+   154 00000099 50                      	push eax
+   155 0000009A F7E5                    	mul ebp				;eax=width*bpp
+   156 0000009C 83C007                  	add eax, byte 7
+   157 0000009F C1E803                  	shr eax, 3			;lineSizeWithoutPudding
+   158 000000A2 89C2                    	mov edx, eax
+   159 000000A4 83C003                  	add eax, byte 3			;size<1GBを仮定してedxを無
+   160                                   
+   161 000000A7 24FC                    	and al, -4			;lineSizeWithPudding
+   162 000000A9 29C2                    	sub edx, eax			;-puddingSize
+   163 000000AB 52                      	push edx
+   164 000000AC F7E1                    	mul ecx
+   165 000000AE 5A                      	pop edx
+   166 000000AF 01C6                    	add esi, eax
+   167 000000B1 01D6                    	add esi, edx			;最終行の最後にはpuddingがないと見るべき
+   168 000000B3 3B742408                	cmp esi, [esp+8]		;endOfModule
+   169 000000B7 58                      	pop eax
+   170 000000B8 7703                    	ja .ret2
+   171 000000BA 29D6                    	sub esi, edx			;esi=endOfImage
+   172 000000BC 47                      	inc edi				;succeeded!
+   173 000000BD 5A                      .ret2:	pop edx
+   174 000000BE 83C404                  .ret:	add esp, byte 4
+   175 000000C1 C3                      	ret
+   176                                  
+   177                                  ;***************************************************************
+   178                                  ; 小ささ優先で作っているが, 速さ優先で作った昔のよりいいかも。
+   179                                  ; 品質最低の高速モードのみ作ってい
+   180                                   
+   181                                  
+   182                                  [absolute 0]
+   183                                  decode:
+   184 00000000 <res 10h>               .regs:		resd 4
+   185 00000010 ????????                .reteip:	resd 1
+   186 00000014 ????????                .env:		resd 1
+   187 00000018 ????????                .size:		resd 1
+   188 0000001C ????????                .module:	resd 1
+   189 00000020 ????????                .outputType:	resd 1
+   190 00000024 ????????                .dest:		resd 1
+   191 00000028 ????????                .skip:		resd 1
+   192                                  [section .text]
+   193                                  [global _decode0_BMP]
+   194                                  _decode0_BMP:
+   195 000000C2 53                      	push ebx
+   196 000000C3 55                      	push ebp
+   197 000000C4 56                      	push esi
+   198 000000C5 57                      	push edi
+   199 000000C6 8B74241C                	mov esi, [esp+decode.module]
+   200 000000CA 8B442418                	mov eax, [esp+decode.size]
+   201 000000CE E85AFFFFFF              	call bmpHeader
+   202                                  	;ret:eax=width, ecx=hegiht, edx=paletteSize, ebx=palette
+   203                                  	;    ebp=bpp, esi=endOfImage, edi=successFlag
+   204 000000D3 85FF                    	test edi,edi
+   205 000000D5 742C                    	jz .error
+   206 000000D7 8B7C2424                	mov edi, [esp+decode.dest]
+   207 000000DB FF742420                	push dword[esp+decode.outputType]
+   208 000000DF FF74242C                	push dword[esp+4+decode.skip]
+   209 000000E3 51                      	push ecx			;height
+   210 000000E4 50                      	push eax
+   211 000000E5 52                      	push edx
+   212 000000E6 F7E5                    	mul ebp
+   213 000000E8 83C01F                  	add eax, byte 31
+   214 000000EB C1E803                  	shr eax, 3
+   215 000000EE 24FC                    	and al, -4
+   216 000000F0 50                      	push eax
+   217 000000F1 89EA                    	mov edx, ebp
+   218 000000F3 89E5                    	mov ebp, esp
+   219 000000F5 E811000000              	call bmp2beta			;ecx!=0 for error
+   220 000000FA 83C418                  	add esp, byte bb.size
+   221 000000FD 89C8                    	mov eax, ecx
+   222 000000FF 85C9                    	test ecx, ecx
+   223 00000101 7403                    	jz .ret
+   224 00000103 6A01                    .error:	push byte 1
+   225 00000105 58                      	pop eax
+   226 00000106 5F                      .ret:	pop edi
+   227 00000107 5E                      	pop esi
+   228 00000108 5D                      	pop ebp
+   229 00000109 5B                      	pop ebx
+   230 0000010A C3                      	ret
+   231                                  
+   232                                  [absolute -4*2]
+   233                                  bb:
+   234 FFFFFFF8 ????????                .col0:		resd 1	;bpp1で使う
+   235 FFFFFFFC ????????                .reteip:	resd 1
+   236 00000000 ????????                .sw:		resd 1	;byte
+   237 00000004 ????????                .paletteSize:	resd 1	;byte
+   238 00000008 ????????                .w:		resd 1	;pixel
+   239 0000000C ????????                .h:		resd 1
+   240 00000010 ????????                .s:		resd 1
+   241 00000014 ????????                .t:		resd 1
+   242                                  .size: equ $-$$
+   243                                  [section .text]
+   244                                  ;eax=?, ecx=height, edx=bpp, ebx=palette
+   245                                  ;ebp=bb, esi=endOfImage, edi=dest
+   246                                  bmp2beta:
+   247 0000010B 8A4514                  	mov al, [ebp+bb.t]
+   248 0000010E 247F                    	and al, 0x7f
+   249 00000110 3C02                    	cmp al, 2
+   250 00000112 0F842D010000            	je near buf16
+   251 00000118 3C04                    	cmp al, 4
+   252 0000011A 7403                    	je buf32
+   253 0000011C 89E1                    	mov ecx, esp		;!=0
+   254 0000011E C3                      	ret
+   255                                  ;===============================================================
+   256                                  ;	Buffer mode 4
+   257                                  ;===============================================================
+   258                                  buf32:
+   259 0000011F 4A                      	dec edx
+   260 00000120 0F84D6000000            	je near .bpp1
+   261 00000126 83EA03                  	sub edx, byte 4-1
+   262 00000129 747D                    	je .bpp4
+   263 0000012B 83EA04                  	sub edx, byte 8-4
+   264 0000012E 7435                    	je .bpp8
+   265 00000130 83EA10                  	sub edx, byte 24-8
+   266 00000133 7403                    	je .bpp24
+   267 00000135 89E1                    	mov ecx, esp		;!=0
+   268 00000137 C3                      	ret
+   269                                  ;---------------------------------------------------
+   270                                  ;	24bpp BMP to 4byte bufer
+   271                                  ;---------------------------------------------------
+   272                                  .bpp24:
+   273                                  	;ecx=height, edx=0, ebx=palette
+   274                                  	;esi=endOfImage, edi=destinationBuffer
+   275                                  	;bb.w=width(pixel), bb.s=skipByte, bb.h=height
+   276                                  	;bb.t=outputType, bb.sw=sourceWidthByte
+   277                                  
+   278                                  	.do24.1:
+   279 00000138 2B7500                  		sub esi, [ebp+bb.sw]	;esi=startOfLine
+   280 0000013B 51                      		push ecx
+   281 0000013C 56                      		push esi
+   282 0000013D 8B4D08                  		mov ecx, [ebp+bb.w]
+   283                                  	.do24.2:
+   284 00000140 8A06                    		mov al, [esi]
+   285 00000142 885703                  			mov [edi+3], dl
+   286 00000145 8807                    		mov [edi], al
+   287 00000147 8A4601                  			mov al, [esi+1]
+   288 0000014A 884701                  		mov [edi+1], al
+   289 0000014D 8A4602                  			mov al, [esi+2]
+   290 00000150 884702                  		mov [edi+2], al
+   291 00000153 83C603                  			add esi, byte 3
+   292 00000156 83C704                  		add edi, byte 4
+   293 00000159 49                      			dec ecx
+   294 0000015A 75E4                    		jnz .do24.2
+   295 0000015C 5E                      		pop esi
+   296 0000015D 59                      		pop ecx
+   297 0000015E 037D10                  		add edi, [ebp+bb.s]
+   298 00000161 49                      		dec ecx
+   299 00000162 75D4                    		jnz .do24.1
+   300 00000164 C3                      		ret
+   301                                  
+   302                                  ;---------------------------------------------------
+   303                                  ;	8bpp BMP to 4byte buffer
+   304                                  ;---------------------------------------------------
+   305                                  .bpp8:
+   306                                  	;ecx=height, edx=0, ebx=palette
+   307                                  	;esi=endOfImage, edi=destinationBuffer
+   308                                  
+   309                                  	;pallete変換
+   310 00000165 B2FF                    	mov dl, 255
+   311 00000167 8B4504                  	mov eax, [ebp+bb.paletteSize]
+   312 0000016A 29C3                    	sub ebx, eax
+   313 0000016C C1E008                  	shl eax, 8
+   314 0000016F 01C3                    	add ebx, eax		;ebx += paletteSize*255
+   315                                  	.do8.1:
+   316 00000171 8B03                    		mov eax, [ebx]
+   317 00000173 2B5D04                  		sub ebx, [ebp+bb.paletteSize]
+   318 00000176 25FFFFFF00              		and eax, 0x00ffffff
+   319 0000017B 4A                      		dec edx
+   320 0000017C 50                      		push eax
+   321 0000017D 79F2                    	jns .do8.1
+   322                                  
+   323                                  	.do8.2:
+   324 0000017F 2B7500                  		sub esi, [ebp+bb.sw]	;esi=firstLineStart
+   325 00000182 51                      		push ecx
+   326 00000183 56                      		push esi
+   327 00000184 8B4D08                  		mov ecx, [ebp+bb.w]
+   328                                  		.do8.3:
+   329 00000187 31C0                    			xor eax, eax
+   330 00000189 83C704                  			add edi, byte 4
+   331 0000018C 8A06                    			mov al, [esi]
+   332 0000018E 46                      			inc esi
+   333                                  			;AGI stole
+   334 0000018F 8B448408                			mov eax, [esp+eax*4+8]
+   335 00000193 49                      			dec ecx
+   336 00000194 8947FC                  			mov [edi-4], eax
+   337 00000197 75EE                    		jnz .do8.3
+   338 00000199 5E                      		pop esi
+   339 0000019A 59                      		pop ecx
+   340 0000019B 037D10                  		add edi, [ebp+bb.s]
+   341 0000019E 49                      		dec ecx
+   342 0000019F 75DE                    	jnz .do8.2
+   343 000001A1 81C400040000            	add esp, 256*4		;palette
+   344 000001A7 C3                      	ret
+   345                                  
+   346                                  ;---------------------------------------------------
+   347                                  ;	4bpp BMP to 4byte buffer
+   348                                  ;---------------------------------------------------
+   349                                  .bpp4:
+   350                                  	;ecx=height, edx=0, ebx=palette
+   351                                  	;esi=endOfImage, edi=destinationBuffer
+   352                                  
+   353                                  	;pallete変換
+   354 000001A8 B210                    	mov dl, 16
+   355 000001AA 8B4504                  	mov eax, [ebp+bb.paletteSize]
+   356 000001AD 29C3                    	sub ebx, eax
+   357 000001AF C1E004                  	shl eax, 4
+   358 000001B2 01C3                    	add ebx, eax			;ebx+=eax*15
+   359                                  	.do4.1
+   359          ******************       warning: label alone on a line without a colon might be in error [-w+label-orphan]
+   360 000001B4 8B03                    		mov eax, [ebx]
+   361 000001B6 2B5D04                  		sub ebx, [ebp+bb.paletteSize]
+   362 000001B9 25FFFFFF00              		and eax, 0x00ffffff
+   363 000001BE 4A                      		dec edx
+   364 000001BF 50                      		push eax
+   365 000001C0 75F2                    	jnz .do4.1
+   366                                  
+   367                                  	.do4.2:
+   368 000001C2 2B7500                  		sub esi, [ebp+bb.sw]	;esi=firstLineStart
+   369 000001C5 51                      		push ecx
+   370 000001C6 56                      		push esi
+   371 000001C7 8B4D08                  		mov ecx, [ebp+bb.w]
+   372                                  		.do4.3:
+   373 000001CA 31D2                    			xor edx, edx
+   374 000001CC 8A06                    			mov al, [esi]
+   375 000001CE 88C2                    			mov dl, al
+   376 000001D0 46                      			inc esi
+   377 000001D1 C0EA04                  			shr dl, 4
+   378 000001D4 83E00F                  			and eax, byte 15
+   379 000001D7 83C704                  			add edi, byte 4
+   380 000001DA 49                      			dec ecx
+   381 000001DB 8B549408                			mov edx, [esp+edx*4+8]
+   382 000001DF 8B448408                			mov eax, [esp+eax*4+8]
+   383 000001E3 8957FC                  			mov [edi-4], edx
+   384 000001E6 7408                    			jz .wend
+   385 000001E8 8907                    			mov [edi], eax
+   386 000001EA 83C704                  			add edi, byte 4
+   387 000001ED 49                      			dec ecx
+   388 000001EE 75DA                    		jnz .do4.3
+   389 000001F0 5E                      .wend:	  pop esi
+   390 000001F1 59                      		pop ecx
+   391 000001F2 037D10                  		add edi, [ebp+bb.s]
+   392 000001F5 49                      		dec ecx
+   393 000001F6 75CA                    	jnz .do4.2
+   394 000001F8 83C440                  	add esp, 16*4		;palette
+   395 000001FB C3                      	ret
+   396                                  
+   397                                  ;---------------------------------------------------
+   398                                  ;	1bpp BMP to 4byte buffer
+   399                                  ;---------------------------------------------------
+   400                                  .bpp1:
+   401                                  	;ecx=height, edx=0, ebx=palette
+   402                                  	;esi=endOfImage, edi=destinationBuffer
+   403                                  
+   404                                  	;pallete変換
+   405 000001FC 8B03                    	mov eax, [ebx]
+   406 000001FE 035D04                  	add ebx, [ebp+bb.paletteSize]
+   407 00000201 25FFFFFF00              	and eax, 0x00ffffff
+   408 00000206 8B1B                    	mov ebx, [ebx]
+   409 00000208 81E3FFFFFF00            	and ebx, 0x00ffffff
+   410 0000020E 31C3                    	xor ebx, eax
+   411                                  	;push ebx
+   412 00000210 50                      	push eax
+   413                                  
+   414                                  	.do1.1:
+   415 00000211 2B7500                  	  sub esi, [ebp+bb.sw]	;esi=firstLineStart
+   416 00000214 51                      	  push ecx
+   417 00000215 56                      	  push esi
+   418 00000216 8B4D08                  	  mov ecx, [ebp+bb.w]
+   419                                  	  .do1.2:
+   420 00000219 8A16                    	    mov dl, [esi]
+   421 0000021B 46                      	     inc esi
+   422 0000021C 56                      	    push esi
+   423 0000021D BE08000000              	     mov esi, 8
+   424                                  	    .do1.3:
+   425 00000222 83C704                  	      add edi, byte 4
+   426 00000225 00D2                    	       add dl, dl
+   427 00000227 19C0                    	      sbb eax, eax
+   428 00000229 21D8                    	      and eax, ebx
+   429 0000022B 3345F8                  	      xor eax, [ebp+bb.col0]
+   430 0000022E 49                      	       dec ecx
+   431 0000022F 8947FC                  	      mov [edi-4], eax
+   432 00000232 7406                    	       jz .wend1bpp
+   433 00000234 4E                      	      dec esi
+   434 00000235 75EB                    	    jnz .do1.3
+   435 00000237 5E                      	    pop esi
+   436 00000238 EBDF                    	  jmp short .do1.2
+   437 0000023A 59                      .wend1bpp:pop ecx
+   438 0000023B 5E                      	  pop esi
+   439 0000023C 59                      	  pop ecx
+   440 0000023D 037D10                  	  add edi, [ebp+bb.s]
+   441 00000240 49                      	  dec ecx
+   442 00000241 75CE                    	jnz .do1.1
+   443 00000243 58                      	pop eax
+   444 00000244 C3                      	ret
+   445                                  
+   446                                  ;===============================================
+   447                                  ;	Buffer mode 2byte
+   448                                  ;===============================================
+   449                                  buf16:
+   450 00000245 4A                      	dec edx
+   451 00000246 0F84E3000000            	je near .bpp1
+   452 0000024C 83EA03                  	sub edx, byte 4-1
+   453 0000024F 0F8484000000            	je near .bpp4
+   454 00000255 83EA04                  	sub edx, byte 8-4
+   455 00000258 743B                    	je .bpp8
+   456 0000025A 83EA10                  	sub edx, byte 24-8
+   457 0000025D 7403                    	je .bpp24
+   458 0000025F 89E1                    	mov ecx, esp
+   459 00000261 C3                      	ret
+   460                                  ;---------------------------------------------------
+   461                                  ;	24bpp BMP to 2byte bufer
+   462                                  ;---------------------------------------------------
+   463                                  .bpp24:
+   464                                  	;ecx=height, edx=0, ebx=palette
+   465                                  	;esi=endOfImage, edi=destinationBuffer
+   466                                  
+   467                                  	.do24.1:
+   468 00000262 2B7500                  	  sub esi, [ebp+bb.sw]	;esi=startOfLine
+   469 00000265 51                      	  push ecx
+   470 00000266 56                      	  push esi
+   471 00000267 8B4D08                  	  mov ecx, [ebp+bb.w]
+   472                                  	  .do24.2:
+   473 0000026A 8A4602                  	    mov al, [esi+2]
+   474 0000026D C1E010                  	    shl eax, 16
+   475 00000270 668B06                  	    mov ax, [esi]
+   476 00000273 83C603                  	     add esi, byte 3
+   477                                  	    ;減色処理 eax=24bitColor, edx=work, ecx=counter, ebx=work
+   478                                  	    ;川合さんの趣味で没ったルーチンを持ってくるもよし(ぉ
+   479                                  	    ;誤差拡散ルーチンを持ってくるもよし
+   480 00000276 C0EC02                  	    shr ah, 2		;???????? RRRRRrrr 00GGGGGG BBBBBbbb 
+   481 00000279 47                      	     inc edi
+   482 0000027A C1E803                  	    shr eax, 3		;000????? ???RRRRR rrr00GGG GGGBBBBB
+   483 0000027D 66C1E005                	    shl ax, 5		;000????? ???RRRRR GGGGGGBB BBB00000
+   484 00000281 47                      	     inc edi
+   485 00000282 C1E805                  	    shr eax, 5		;00000000 ???????? RRRRRGGG GGGBBBBB
+   486 00000285 49                      	     dec ecx
+   487 00000286 668947FE                	    mov [edi-2], ax
+   488 0000028A 75DE                    	  jnz .do24.2
+   489 0000028C 5E                      	  pop esi
+   490 0000028D 59                      	  pop ecx
+   491 0000028E 037D10                  	  add edi, [ebp+bb.s]
+   492 00000291 49                      	  dec ecx
+   493 00000292 75CE                    	jnz .do24.1
+   494 00000294 C3                      	ret
+   495                                  
+   496                                  ;---------------------------------------------------
+   497                                  ;	8bpp BMP to 2byte buffer
+   498                                  ;---------------------------------------------------
+   499                                  .bpp8:
+   500                                  	;ecx=height, edx=0, ebx=palette
+   501                                  	;esi=endOfImage, edi=destinationBuffer
+   502                                  
+   503                                  	;pallete変換
+   504 00000295 B2FF                    	mov dl, 255
+   505 00000297 8B4504                  	mov eax, [ebp+bb.paletteSize]
+   506 0000029A 29C3                    	sub ebx, eax
+   507 0000029C C1E008                  	shl eax, 8
+   508 0000029F 01C3                    	add ebx, eax		;ebx += paletteSize*255
+   509                                  	.do8.1:
+   510 000002A1 8B03                    	  mov eax, [ebx]
+   511 000002A3 2B5D04                  	  sub ebx, [ebp+bb.paletteSize]
+   512 000002A6 E8CF000000              	  call .paletteConv
+   513 000002AB 4A                      	  dec edx
+   514 000002AC 50                      	  push eax
+   515 000002AD 79F2                    	jns .do8.1
+   516                                  
+   517                                  	.do8.2:
+   518 000002AF 2B7500                  	  sub esi, [ebp+bb.sw]	;esi=firstLineStart
+   519 000002B2 51                      	  push ecx
+   520 000002B3 56                      	  push esi
+   521 000002B4 8B4D08                  	  mov ecx, [ebp+bb.w]
+   522                                  	  .do8.3:
+   523 000002B7 31C0                    	    xor eax, eax
+   524 000002B9 83C702                  	     add edi, byte 2
+   525 000002BC 8A06                    	    mov al, [esi]
+   526 000002BE 46                      	     inc esi
+   527                                  	    ;AGI stole
+   528 000002BF 8B448408                	    mov eax, [esp+eax*4+8]
+   529 000002C3 49                      	     dec ecx
+   530 000002C4 668947FE                	    mov [edi-2], ax
+   531 000002C8 75ED                    	  jnz .do8.3
+   532 000002CA 5E                      	  pop esi
+   533 000002CB 59                      	  pop ecx
+   534 000002CC 037D10                  	  add edi, [ebp+bb.s]
+   535 000002CF 49                      	  dec ecx
+   536 000002D0 75DD                    	jnz .do8.2
+   537 000002D2 81C400040000            	add esp, 256*4		;palette
+   538 000002D8 C3                      	ret
+   539                                  
+   540                                  ;---------------------------------------------------
+   541                                  ;	4bpp BMP to 2byte buffer
+   542                                  ;---------------------------------------------------
+   543                                  .bpp4:
+   544                                  	;ecx=height, edx=0, ebx=palette
+   545                                  	;esi=endOfImage, edi=destinationBuffer
+   546                                  
+   547                                  	;pallete変換
+   548 000002D9 B210                    	mov dl, 16
+   549 000002DB 8B4504                  	mov eax, [ebp+bb.paletteSize]
+   550 000002DE 29C3                    	sub ebx, eax
+   551 000002E0 C1E004                  	shl eax, 4
+   552 000002E3 01C3                    	add ebx, eax			;ebx+=eax*15
+   553                                  	.do4.1:
+   554 000002E5 8B03                    	  mov eax, [ebx]
+   555 000002E7 2B5D04                  	  sub ebx, [ebp+bb.paletteSize]
+   556 000002EA E88B000000              	  call .paletteConv
+   557 000002EF 4A                      	  dec edx
+   558 000002F0 50                      	  push eax
+   559 000002F1 75F2                    	jnz .do4.1
+   560                                  
+   561                                  	.do4.2:
+   562 000002F3 2B7500                  	  sub esi, [ebp+bb.sw]	;esi=firstLineStart
+   563 000002F6 51                      	  push ecx
+   564 000002F7 56                      	  push esi
+   565 000002F8 8B4D08                  	  mov ecx, [ebp+bb.w]
+   566                                  	  .do4.3:
+   567 000002FB 31D2                    	    xor edx, edx
+   568 000002FD 8A06                    	     mov al, [esi]
+   569 000002FF 88C2                    	    mov dl, al
+   570 00000301 46                      	     inc esi
+   571 00000302 C0EA04                  	    shr dl, 4
+   572 00000305 83E00F                  	     and eax, byte 15
+   573 00000308 83C702                  	    add edi, byte 2
+   574 0000030B 49                      	     dec ecx
+   575 0000030C 8B549408                	    mov edx, [esp+edx*4+8]
+   576 00000310 8B448408                	     mov eax, [esp+eax*4+8]
+   577 00000314 668957FE                	    mov [edi-2], dx
+   578 00000318 7409                    	     jz .wend
+   579 0000031A 668907                  	    mov [edi], ax
+   580 0000031D 83C702                  	     add edi, byte 2
+   581 00000320 49                      	    dec ecx
+   582 00000321 75D8                    	  jnz .do4.3
+   583 00000323 5E                      .wend:	  pop esi
+   584 00000324 59                      	  pop ecx
+   585 00000325 037D10                  	  add edi, [ebp+bb.s]
+   586 00000328 49                      	  dec ecx
+   587 00000329 75C8                    	jnz .do4.2
+   588 0000032B 83C440                  	add esp, 16*4		;palette
+   589 0000032E C3                      	ret
+   590                                  
+   591                                  ;---------------------------------------------------
+   592                                  ;	1bpp BMP to 2byte buffer
+   593                                  ;---------------------------------------------------
+   594                                  .bpp1:
+   595                                  	;ecx=height, edx=0, ebx=palette
+   596                                  	;esi=endOfImage, edi=destinationBuffer
+   597                                  
+   598                                  	;pallete変換
+   599 0000032F 8B03                    	mov eax, [ebx]
+   600 00000331 035D04                  	add ebx, [ebp+bb.paletteSize]
+   601 00000334 E841000000              	call .paletteConv
+   602 00000339 50                      	push eax
+   603 0000033A 8B03                    	mov eax, [ebx]
+   604 0000033C E839000000              	call .paletteConv
+   605 00000341 5B                      	pop ebx
+   606 00000342 93                      	xchg eax, ebx
+   607 00000343 31C3                    	xor ebx, eax
+   608 00000345 50                      	push eax
+   609                                  
+   610                                  	.do1.1:
+   611 00000346 2B7500                  	  sub esi, [ebp+bb.sw]	;esi=firstLineStart
+   612 00000349 51                      	  push ecx
+   613 0000034A 56                      	  push esi
+   614 0000034B 8B4D08                  	  mov ecx, [ebp+bb.w]
+   615                                  	  .do1.2:
+   616 0000034E 8A16                    	    mov dl, [esi]
+   617 00000350 46                      	     inc esi
+   618 00000351 56                      	    push esi
+   619 00000352 BE08000000              	     mov esi, 8
+   620                                  	    .do1.3:
+   621 00000357 00D2                    	      add dl, dl
+   622 00000359 47                      	       inc edi
+   623 0000035A 19C0                    	      sbb eax, eax
+   624 0000035C 47                      	       inc edi
+   625 0000035D 21D8                    	      and eax, ebx
+   626 0000035F 3345F8                  	      xor eax, [ebp+bb.col0]
+   627 00000362 49                      	       dec ecx
+   628 00000363 668947FE                	      mov [edi-2], ax
+   629 00000367 7406                    	       jz .wend1bpp
+   630 00000369 4E                      	      dec esi
+   631 0000036A 75EB                    	    jnz .do1.3
+   632 0000036C 5E                      	    pop esi
+   633 0000036D EBDF                    	  jmp short .do1.2
+   634                                  .wend1bpp:
+   635 0000036F 59                      	  pop ecx
+   636 00000370 5E                      	  pop esi
+   637 00000371 59                      	  pop ecx
+   638 00000372 037D10                  	  add edi, [ebp+bb.s]
+   639 00000375 49                      	  dec ecx
+   640 00000376 75CE                    	jnz .do1.1
+   641 00000378 58                      	pop eax
+   642 00000379 C3                      	ret
+   643                                  
+   644                                  .paletteConv:
+   645 0000037A C0EC02                  	shr ah, 2
+   646 0000037D C1E803                  	shr eax, 3
+   647 00000380 66C1E005                	shl ax, 5
+   648 00000384 C1E805                  	shr eax, 5
+   649 00000387 C3                      	ret
