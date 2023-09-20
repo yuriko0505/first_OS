@@ -34,6 +34,7 @@
 |27|09/17|[Day27](#day27)|
 |28|09/18|[Day28](#day28)|
 |29|09/19|[Day29](#day29)|
+|30|09/20|[Day30](#day30)|
 
 githubのつかいかた→[ソフI_バージョン管理](https://eeic-software1.github.io/2022/git/)<br>
 [サポートページ](http://hrb.osask.jp/) <- hikaliumさんの名が！
@@ -386,3 +387,14 @@ _io_load_eflags:
   - ```memcmp``` は ```strncmp``` で代替
 - bball✨
 - インベーダゲーム
+- bballを起動しインベーダゲームをすると、bballの下の方がバグる
+
+### Day30
+<span style="color: RoyalBlue; font-size: 150%;">***高度なアプリケーション***</span><br>
+- STEP の modularized_calcurator 思い出した
+- テキストビューワー
+- 音楽プレイヤー
+- 画像ビューワー → よくわからない
+- アプリを追加すると日本語表示が変わる ← 嫌な予感！
+  - 文字表示に関係していそうな```char``` を全て ```unsigned char``` にしたらちゃんと表示されるようになった
+  - ```char``` が signed か unsigned かは処理系によって異なるので、どっちなのか明確に宣言した方が良さそう
